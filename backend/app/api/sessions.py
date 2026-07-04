@@ -132,6 +132,7 @@ def get_result(session_id: str):
     return {
         "id": session.id,
         "config": session.config.model_dump(mode="json"),
+        "context": session.context.model_dump(mode="json"),
         "evaluation": session.evaluation.model_dump(mode="json"),
         "transcript": [t.model_dump(mode="json") for t in session.transcript],
         "feedback": session.feedback.model_dump(mode="json") if session.feedback else None,

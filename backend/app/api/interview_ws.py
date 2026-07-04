@@ -26,14 +26,10 @@ router = APIRouter()
 
 def friendly_llm_error(exc: Exception) -> str:
     s = str(exc)
-    if "RESOURCE_EXHAUSTED" in s or "429" in s:
-        return (
-            "The AI model hit its quota/rate limit (Gemini free tier). Wait a minute "
-            "and retry, switch GEMINI_MODEL, or use a key with quota. "
-            "See https://ai.google.dev/gemini-api/docs/rate-limits"
-        )
-    if "API key" in s or "PERMISSION_DENIED" in s or "401" in s or "403" in s:
-        return "The Gemini API key is missing or invalid. Set GEMINI_API_KEY and restart."
+    if "429" in s or "rate" in s.lower() or "quota" in s.lower():
+        return "The AI model hit its rate/quota limit. Please wait a moment and retry."
+    if "API key" in s or "401" in s or "403" in s:
+        return "The OpenAI API key is missing or invalid. Set OPENAI_API_KEY and restart."
     return f"AI model error: {s[:200]}"
 
 

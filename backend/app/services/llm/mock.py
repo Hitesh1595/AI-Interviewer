@@ -1,4 +1,4 @@
-"""Offline mock provider so the UI runs without a Gemini API key."""
+"""Offline mock provider so the UI runs without an OpenAI API key."""
 from __future__ import annotations
 
 import json
@@ -54,7 +54,7 @@ class MockProvider(LLMProvider):
                 ],
                 "weaknesses": ["Limited depth on system-level trade-offs"],
                 "summary": (
-                    "This is a mock evaluation generated because no GEMINI_API_KEY is "
+                    "This is a mock evaluation generated because no OPENAI_API_KEY is "
                     "configured. Set your key to get real, transcript-based scoring."
                 ),
                 "recommendation": "yes",

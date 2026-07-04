@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import admin, interview_ws, invites, sessions
+from app.api import admin, interview_ws, invites, realtime, sessions
 from app.config import get_settings
 from app.db import init_db
 
@@ -36,6 +36,7 @@ def create_app() -> FastAPI:
     )
 
     app.include_router(admin.router)
+    app.include_router(realtime.router)
     app.include_router(invites.router)
     app.include_router(sessions.router)
     app.include_router(interview_ws.router)
@@ -47,8 +48,8 @@ def create_app() -> FastAPI:
         return {
             "status": "ok",
             "provider": active_provider_name(),
-            "gemini": settings.has_gemini,
-            "anthropic": settings.has_anthropic,
+            "openai": settings.has_openai,
+            "realtime_model": settings.openai_realtime_model,
         }
 
     # In production, serve the built SPA with a catch-all fallback for client routes.

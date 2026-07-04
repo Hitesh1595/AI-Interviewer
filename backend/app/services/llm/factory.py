@@ -1,40 +1,30 @@
-"""Factory pattern: pick the LLM provider based on configuration.
+"""Factory pattern: pick the LLM provider.
 
-LLM_PROVIDER controls the choice: "gemini" | "anthropic" | "mock" | "auto".
-"auto" prefers whichever key is configured (Anthropic first, then Gemini),
-falling back to the offline mock so the UI always runs.
+The project runs on OpenAI (text evaluation + Realtime voice). When no key is
+configured it falls back to an offline mock so the UI still runs.
+LLM_PROVIDER: "openai" | "mock" | "auto".
 """
 from __future__ import annotations
 
 from functools import lru_cache
 
 from app.config import get_settings
-from app.services.llm.anthropic_provider import AnthropicProvider
 from app.services.llm.base import LLMProvider
-from app.services.llm.gemini import GeminiProvider
 from app.services.llm.mock import MockProvider
+from app.services.llm.openai_provider import OpenAIProvider
 
 
 @lru_cache
 def get_llm_provider() -> LLMProvider:
     s = get_settings()
-    provider = (s.llm_provider or "gemini").lower()
+    provider = (s.llm_provider or "openai").lower()
 
     if provider == "mock":
         return MockProvider()
-    if provider == "anthropic" and s.has_anthropic:
-        return AnthropicProvider(s.anthropic_api_key, s.anthropic_model)
-    if provider == "gemini" and s.has_gemini:
-        return GeminiProvider(s.gemini_api_key, s.gemini_model)
-
-    # auto / fallback
-    if s.has_anthropic:
-        return AnthropicProvider(s.anthropic_api_key, s.anthropic_model)
-    if s.has_gemini:
-        return GeminiProvider(s.gemini_api_key, s.gemini_model)
+    if s.has_openai:  # "openai" or "auto"
+        return OpenAIProvider(s.openai_api_key, s.openai_text_model)
     return MockProvider()
 
 
 def active_provider_name() -> str:
-    p = get_llm_provider()
-    return type(p).__name__.replace("Provider", "").lower()
+    return type(get_llm_provider()).__name__.replace("Provider", "").lower()

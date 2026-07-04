@@ -7,14 +7,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    # LLM provider selection: "gemini" | "anthropic" | "mock" | "auto"
-    llm_provider: str = "anthropic"
+    # LLM provider: "openai" | "mock" | "auto"
+    llm_provider: str = "openai"
 
-    gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
-
-    anthropic_api_key: str = ""
-    anthropic_model: str = "claude-haiku-4-5"
+    # OpenAI — text model for evaluation + Realtime model/voice for the interview.
+    openai_api_key: str = ""
+    openai_text_model: str = "gpt-4o-mini"
+    openai_realtime_model: str = "gpt-realtime-2"
+    openai_voice: str = "alloy"
 
     github_token: str = ""
     database_url: str = "sqlite:///./ai_interviewer.db"
@@ -29,12 +29,8 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
-    def has_gemini(self) -> bool:
-        return bool(self.gemini_api_key)
-
-    @property
-    def has_anthropic(self) -> bool:
-        return bool(self.anthropic_api_key)
+    def has_openai(self) -> bool:
+        return bool(self.openai_api_key)
 
 
 @lru_cache
