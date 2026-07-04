@@ -12,7 +12,13 @@ const DIM_LABELS: Record<string, string> = {
 
 export default function ResultPage() {
   const { id = "" } = useParams();
-  const [data, setData] = useState<{ evaluation: Evaluation; config: any; feedback: any } | null>(null);
+  const [data, setData] = useState<{
+    evaluation: Evaluation;
+    config: any;
+    context?: any;
+    feedback: any;
+    transcript?: { role: string; content: string }[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -97,6 +103,48 @@ export default function ResultPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <ListCard title="Strengths" items={ev.strengths} titleClass="text-emerald-700" />
           <ListCard title="Areas to improve" items={ev.weaknesses} titleClass="text-amber-700" />
+        </div>
+
+        {/* Candidate profile that was used */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 className="mb-3 font-semibold text-slate-800">Candidate profile used</h2>
+          <div className="text-sm text-slate-600">
+            <div className="mb-2">
+              Sources: {(data.context?.available_sources || []).join(", ") || "none"}
+              {data.config?.focus_areas?.length ? <> · Focus: {data.config.focus_areas.join(", ")}</> : null}
+            </div>
+            {data.context?.tech_stack?.length ? (
+              <div className="flex flex-wrap gap-1.5">
+                {data.context.tech_stack.slice(0, 30).map((t: string) => (
+                  <span key={t} className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">{t}</span>
+                ))}
+              </div>
+            ) : (
+              <span className="text-slate-400">No tech signals extracted.</span>
+            )}
+          </div>
+        </div>
+
+        {/* Full conversation transcript */}
+        <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+          <h2 className="mb-3 font-semibold text-slate-800">
+            Conversation <span className="text-sm font-normal text-slate-400">({data.transcript?.length || 0} turns)</span>
+          </h2>
+          {data.transcript?.length ? (
+            <div className="flex flex-col gap-3">
+              {data.transcript.map((t, i) => (
+                <div key={i} className={`flex ${t.role === "interviewer" ? "justify-start" : "justify-end"}`}>
+                  <div className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm ${
+                    t.role === "interviewer" ? "bg-slate-100 text-slate-800" : "bg-indigo-600 text-white"}`}>
+                    <div className="mb-0.5 text-xs font-medium opacity-60">{t.role === "interviewer" ? "Interviewer" : "Candidate"}</div>
+                    {t.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400">No transcript recorded.</p>
+          )}
         </div>
 
         {/* Candidate feedback (read-only, for admin) */}

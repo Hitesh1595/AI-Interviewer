@@ -160,6 +160,26 @@ export async function finishSession(id: string): Promise<Evaluation> {
   return jsonOrThrow(await fetch(`/api/sessions/${id}/finish`, { method: "POST" }));
 }
 
+// --- OpenAI Realtime voice interview (candidate, public) ---
+export async function getRealtimeToken(
+  sessionId: string
+): Promise<{ token: string; model: string; deadline_ts: number | null }> {
+  return jsonOrThrow(await fetch(`/api/realtime/token/${sessionId}`, { method: "POST" }));
+}
+
+export async function postTranscript(
+  sessionId: string,
+  turns: { role: string; content: string }[]
+): Promise<void> {
+  await jsonOrThrow(
+    await fetch(`/api/realtime/${sessionId}/transcript`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ turns }),
+    })
+  );
+}
+
 export async function getResult(id: string) {
   return jsonOrThrow(await fetch(`/api/sessions/${id}/result`, { headers: adminHeaders() }));
 }
