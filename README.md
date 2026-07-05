@@ -1,14 +1,15 @@
 # 🤖 AI Interviewer
 
 An AI-powered interviewer that ingests a candidate's **GitHub**, **LinkedIn**, and
-**PDF resume**, runs a time-boxed conversational interview tailored to a target
+**PDF resume**, runs a time-boxed **live voice interview** tailored to a target
 **role** and **seniority**, then produces a **summary**, a **score out of 10**, and
-a **move-forward / no** recommendation. Voice is optional and free (browser Web
-Speech API). Backend is FastAPI + Google Gemini; frontend is React + Vite + Tailwind.
+a **move-forward / no** recommendation. Voice runs over **OpenAI Realtime**
+(WebRTC, speech-to-speech); evaluation runs on an **OpenAI** text model. Frontend
+is React + Vite + Tailwind.
 
 > Reference/inspiration: [code100x/ai-interviewer](https://github.com/code100x/ai-interviewer).
-> This project reimplements the idea in **Python/FastAPI** with a pattern-driven,
-> free-resource stack (no scraping, no paid voice).
+> This project reimplements the idea in **Python/FastAPI** with a pattern-driven
+> stack (no scraping).
 
 ## Roles & flow
 
@@ -51,9 +52,11 @@ Layered: **API → services → domain → persistence**. See the full spec in
 
 ```bash
 cp .env.example .env
-# Pick a provider + paste a key:
-#   LLM_PROVIDER=anthropic  + ANTHROPIC_API_KEY=...   (Claude Haiku 4.5, ~$0.07/interview)
-#   LLM_PROVIDER=gemini     + GEMINI_API_KEY=...      (free tier)
+# Paste an OpenAI key:
+#   OPENAI_API_KEY=...
+#   OPENAI_TEXT_MODEL=gpt-4o-mini        (evaluation)
+#   OPENAI_REALTIME_MODEL=gpt-realtime-2 (voice interview)
+#   OPENAI_VOICE=alloy
 # Also set ADMIN_PASSWORD to protect the dashboard.
 docker compose up --build
 ```
@@ -66,10 +69,10 @@ docker compose up --build
 
 ### LLM provider
 
-Set `LLM_PROVIDER` to `anthropic` (Claude, paid — ~cents/interview), `gemini`
-(free tier), `mock`, or `auto`. Default model for Claude is `claude-haiku-4-5`
-(`ANTHROPIC_MODEL` to change); for Gemini `gemini-2.5-flash`. The provider is
-hidden behind an `LLMProvider` interface (Factory pattern) — adding another is one file.
+Set `LLM_PROVIDER` to `openai` (default) or `mock`. OpenAI powers both the live
+voice interview (Realtime API over WebRTC) and the text evaluation model. The
+provider is hidden behind an `LLMProvider` interface (Factory pattern) — adding
+another is one file.
 
 ### Admin login
 
@@ -85,7 +88,7 @@ shared password for the scaffold — swap for per-user accounts + OAuth in produ
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env         # add GEMINI_API_KEY
+cp .env.example .env         # add OPENAI_API_KEY
 uvicorn app.main:app --reload
 ```
 
@@ -116,22 +119,26 @@ cd backend && source .venv/bin/activate && pytest
 1. **Admin creates invite** (`POST /api/invites`) → shares `/invite/{id}`.
 2. **Candidate starts** (`POST /api/invites/{id}/start`) — profile adapters run
    concurrently, failures isolated; context aggregated (tech stack + projects).
-3. **Interview** (`WS /api/ws/interview/{id}`) — AI introduces itself and streams a
-   natural conversation; the state machine advances by time + turn budget.
-4. **Evaluation** — on wrap-up (or `POST /finish` / deadline), the transcript is
-   scored via a weighted rubric → summary, /10, verdict.
-5. **Feedback** (`POST /api/sessions/{id}/feedback`) — rate the experience.
+3. **Interview** (`POST /api/realtime/token/{id}`) — the backend mints a
+   short-lived OpenAI Realtime token bound to this candidate's profile-grounded
+   instructions; the browser connects directly to OpenAI over WebRTC for a live
+   spoken conversation, paced by the time + turn budget.
+4. **Transcript** (`POST /api/realtime/{id}/transcript`) — the browser posts the
+   spoken transcript back once the interview ends.
+5. **Evaluation** — on wrap-up (or deadline), the transcript is scored via a
+   weighted rubric → summary, /10, verdict.
+6. **Feedback** (`POST /api/sessions/{id}/feedback`) — rate the experience.
 
 ## Free resources
 
-Gemini free tier · GitHub public REST API · browser Web Speech API · SQLite.
+GitHub public REST API · SQLite. (OpenAI text + Realtime voice are paid, usage-billed.)
 
 ## Known limitations (scaffold)
 
 - Résumés are stored in plaintext SQLite (fine for local/demo; encrypt for prod).
-- Gemini free tier has RPM limits; heavy parallel use may hit them.
+- OpenAI Realtime voice is paid (usage-billed) — no free-tier voice path.
 - LinkedIn PDF parsing is heuristic (export formats vary).
-- Web Speech voice works in Chrome/Edge; text chat works everywhere.
+- Voice requires a browser with WebRTC (all modern browsers); no text-only fallback is wired into the UI currently.
 - SQLite suits a demo; swap in Postgres via the repository interface for scale.
 
 See [`TODO.md`](TODO.md) for the full project checklist and roadmap.
